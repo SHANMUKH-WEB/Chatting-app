@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: chat
+    description: Shared chat room operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,58 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /chat/messages:
+    get:
+      operationId: listChatMessages
+      tags: [chat]
+      summary: List recent chat messages
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        "200":
+          description: Recent messages, oldest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatMessage"
+    post:
+      operationId: sendChatMessage
+      tags: [chat]
+      summary: Send a message to the shared room
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatMessageInput"
+      responses:
+        "201":
+          description: The saved message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatMessage"
+  /chat/summary:
+    get:
+      operationId: getChatSummary
+      tags: [chat]
+      summary: Get a summary of recent room activity
+      responses:
+        "200":
+          description: Current room activity summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatSummary"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +87,43 @@ components:
           type: string
       required:
         - status
+    ChatMessage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        authorName:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, authorName, content, createdAt]
+    ChatMessageInput:
+      type: object
+      properties:
+        authorName:
+          type: string
+          minLength: 1
+          maxLength: 32
+        content:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required: [authorName, content]
+    ChatSummary:
+      type: object
+      properties:
+        messageCount:
+          type: integer
+        participantCount:
+          type: integer
+        todayMessageCount:
+          type: integer
+        lastActivity:
+          type: [string, "null"]
+          format: date-time
+      required: [messageCount, participantCount, todayMessageCount, lastActivity]
 
